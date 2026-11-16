@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EcoStream Sgo | NASA Space Apps Challenge</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 7px; height: 7px; }
+    ::-webkit-scrollbar-track { background: #020617; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #06b6d4; }
+    .grid-pattern {
+      background-image: radial-gradient(rgba(34, 211, 238, 0.1) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col grid-pattern selection:bg-cyan-500/30 selection:text-cyan-200">
+
+  <!-- TOAST DE NOTIFICACIÓN (Sin alert()) -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- HEADER LIMPIO -->
+  <header class="border-b border-slate-800/90 bg-slate-900/85 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <!-- Título y Subtítulo -->
+      <div class="flex items-start sm:items-center gap-3.5">
+        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-400 to-emerald-500 flex items-center justify-center text-slate-950 shadow-lg shadow-cyan-500/20 shrink-0">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex flex-wrap items-center gap-2">
+            <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white">EcoStream Sgo</h1>
+            <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">NASA Space Apps</span>
+          </div>
+          <p class="text-xs sm:text-sm text-slate-400 mt-0.5">Sistema de Alerta Temprana de Inundaciones y Purificación con Biochar — Río Dulce, Santiago del Estero</p>
+        </div>
+      </div>
+
+      <!-- Estado de Conexión API / Modo Offline -->
+      <div class="flex flex-wrap items-center gap-2 bg-slate-950/90 border border-slate-800 rounded-xl p-2 self-start lg:self-auto">
+        <div class="flex items-center gap-2 px-2">
+          <span id="header-conn-dot" class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+          <span id="header-conn-text" class="text-xs font-mono text-slate-300">Modo Offline / Sin verificar</span>
+        </div>
+        <select id="header-mode-select" onchange="handleConnectionModeChange(this.value)" aria-label="Modo de conexión" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-400">
+          <option value="live">API Local (127.0.0.1:8000)</option>
+          <option value="offline">Simulación Offline</option>
+        </select>
+        <button onclick="checkApiHealth()" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition">
+          Verificar
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-8">
+
+    <!-- NAVEGACIÓN PRINCIPAL: SOLAMENTE 3 BOTONES -->
+    <section aria-label="Accesos principales" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      
+      <!-- BOTÓN 1: DOCUMENTACIÓN DEL PROYECTO (GOOGLE DRIVE) -->
+      <button id="btn-nav-drive" onclick="handleDriveButtonClick()" class="group relative text-left p-5 rounded-2xl border-2 border-cyan-500/60 bg-slate-900/90 hover:bg-slate-800/90 shadow-lg shadow-cyan-500/10 transition-all flex flex-col justify-between gap-4">
+        <div class="flex items-center justify-between">
+          <div class="w-11 h-11 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+          </div>
+          <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-cyan-500/15 text-cyan-300 font-mono text-[11px] font-semibold">
+            <span>Google Drive</span>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </span>
+        </div>
+        <div>
+          <h2 class="text-base sm:text-lg font-bold text-white group-hover:text-cyan-300 transition-colors">Documentación del Proyecto (Google Drive)</h2>
+          <p id="drive-btn-subtitle" class="text-xs text-slate-400 mt-1 truncate">Haz clic para abrir el enlace de Drive o configurarlo abajo</p>
+        </div>
+      </button>
+
+      <!-- BOTÓN 2: PRESENTACIÓN POWERPOINT -->
+      <button id="btn-nav-ppt" onclick="selectSection('ppt')" class="group relative text-left p-5 rounded-2xl border-2 border-slate-800 hover:border-indigo-500/60 bg-slate-900/75 hover:bg-slate-800/90 transition-all flex flex-col justify-between gap-4">
+        <div class="flex items-center justify-between">
+          <div class="w-11 h-11 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+            </svg>
+          </div>
+          <span class="px-2.5 py-1 rounded-full bg-indigo-500/15 text-indigo-300 font-mono text-[11px] font-semibold">Pitch Deck</span>
+        </div>
+        <div>
+          <h2 class="text-base sm:text-lg font-bold text-white group-hover:text-indigo-300 transition-colors">Presentación PowerPoint</h2>
+          <p class="text-xs text-slate-400 mt-1">Visor ejecutivo y enlace directo a diapositivas</p>
+        </div>
+      </button>
+
+      <!-- BOTÓN 3: ENDPOINTS API -->
+      <button id="btn-nav-api" onclick="selectSection('api')" class="group relative text-left p-5 rounded-2xl border-2 border-slate-800 hover:border-emerald-500/60 bg-slate-900/75 hover:bg-slate-800/90 transition-all flex flex-col justify-between gap-4">
+        <div class="flex items-center justify-between">
+          <div class="w-11 h-11 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <span class="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-300 font-mono text-[11px] font-semibold">FastAPI REST</span>
+        </div>
+        <div>
+          <h2 class="text-base sm:text-lg font-bold text-white group-hover:text-emerald-300 transition-colors">Endpoints API</h2>
+          <p class="text-xs text-slate-400 mt-1">Consola en vivo, Mann-Kendall y Cianosemáforo</p>
+        </div>
+      </button>
+
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VISTA 1: ACCESO Y CONFIGURACIÓN DE GOOGLE DRIVE (SIN TEXTO EXTENSO)   -->
+    <!-- ===================================================================== -->
+    <section id="panel-drive" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+        <div>
+          <span class="text-xs font-mono uppercase tracking-wider text-cyan-400 font-semibold">Repositorio Documental Externo</span>
+          <h2 class="text-xl font-bold text-white mt-1">Enlace a Documentación en Google Drive</h2>
+        </div>
+        <a id="drive-direct-anchor" href="https://drive.google.com" target="_blank" rel="noopener noreferrer" onclick="openDriveLink(event)" class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-bold text-sm shadow-lg shadow-cyan-500/20 transition">
+          <span>Abrir Carpeta / Documento en Drive</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+        </a>
+      </div>
+
+      <!-- Formulario de configuración rápida de URL de Google Drive -->
+      <form onsubmit="saveDriveUrl(event)" class="space-y-3">
+        <label for="input-drive-url" class="block text-xs font-mono uppercase tracking-wider text-slate-400">Configurar Link de Google Drive (guardado en localStorage)</label>
+        <div class="flex flex-col sm:flex-row gap-3">
+          <input id="input-drive-url" type="url" required placeholder="https://drive.google.com/drive/folders/..." class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 font-mono text-xs sm:text-sm text-cyan-300 placeholder-slate-600 focus:outline-none focus:border-cyan-400" />
+          <button type="submit" class="px-5 py-3 rounded-xl bg-slate-800 hover:bg-cyan-500 hover:text-slate-950 text-white font-semibold text-xs sm:text-sm border border-slate-700 transition shrink-0">
+            Guardar Link de Drive
+          </button>
+        </div>
+        <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
+          <span id="drive-saved-status">Sin enlace personalizado guardado aún.</span>
+          <button type="button" onclick="resetDriveUrl()" class="text-slate-400 hover:text-rose-400 underline">Restablecer</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VISTA 2: PRESENTACIÓN POWERPOINT                                      -->
+    <!-- ===================================================================== -->
+    <section id="panel-ppt" class="hidden space-y-6">
+      
+      <!-- Barra de enlace externo (PowerPoint / Google Slides / Canva) -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <span class="text-xs font-mono uppercase tracking-wider text-indigo-400 font-semibold">Presentación Ejecutiva</span>
+            <h2 class="text-lg font-bold text-white">EcoStream Sgo — Pitch Deck (7 Diapositivas)</h2>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <a id="ppt-external-anchor" href="https://canva.link/bwy182rc658da9r" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-xs transition shadow-md shadow-indigo-500/20">
+              <span>Abrir Presentación Externa</span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+            <button onclick="togglePptConfig()" class="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs transition">
+              Configurar Link / Embed
+            </button>
+          </div>
+        </div>
+
+        <!-- Configuración desplegable del enlace PowerPoint / Embed -->
+        <form id="ppt-config-form" onsubmit="savePptSettings(event)" class="hidden pt-3 border-t border-slate-800 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+          <div class="md:col-span-5">
+            <label class="block text-[11px] font-mono text-slate-400 mb-1">URL Presentación (PowerPoint Online / Slides / Canva)</label>
+            <input id="input-ppt-url" type="url" placeholder="https://..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 font-mono text-xs text-indigo-300 focus:outline-none focus:border-indigo-400" />
+          </div>
+          <div class="md:col-span-5">
+            <label class="block text-[11px] font-mono text-slate-400 mb-1">URL Iframe Embed (opcional, reemplaza diapositivas)</label>
+            <input id="input-ppt-embed" type="url" placeholder="https://docs.google.com/presentation/d/.../embed" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 font-mono text-xs text-cyan-300 focus:outline-none focus:border-cyan-400" />
+          </div>
+          <div class="md:col-span-2 flex gap-2">
+            <button type="submit" class="w-full py-2 px-3 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-xs transition">Guardar</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Iframe Embebido (si el usuario configura uno) -->
+      <div id="ppt-embed-wrapper" class="hidden bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+        <div class="px-4 py-2.5 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+          <span class="text-xs font-mono text-indigo-300">Vista Embebida de Presentación</span>
+          <button onclick="clearPptEmbed()" class="text-xs text-slate-400 hover:text-rose-400">Volver a diapositivas locales</button>
+        </div>
+        <iframe id="ppt-embed-frame" src="" class="w-full h-[500px] border-0" allowfullscreen></iframe>
+      </div>
+
+      <!-- Visor Local de Diapositivas Ejecutivas -->
+      <div id="ppt-local-deck" class="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+        <div class="px-6 py-3.5 bg-slate-950/90 border-b border-slate-800 flex items-center justify-between gap-2">
+          <span id="slide-indicator" class="text-xs font-mono text-cyan-400 font-semibold">Diapositiva 1 / 7</span>
+          <div class="flex items-center gap-2">
+            <button id="btn-slide-prev" onclick="moveSlide(-1)" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 disabled:opacity-40 transition">← Anterior</button>
+            <button id="btn-slide-next" onclick="moveSlide(1)" class="px-3 py-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-xs font-bold text-white disabled:opacity-40 transition">Siguiente →</button>
+          </div>
+        </div>
+
+        <div id="slide-body" class="p-6 sm:p-10 min-h-[360px] flex flex-col justify-center"></div>
+
+        <div id="slide-dots" class="px-6 py-3 bg-slate-950/70 border-t border-slate-800 flex items-center justify-center gap-2"></div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VISTA 3: CONSOLA INTERACTIVA DE ENDPOINTS API                         -->
+    <!-- ===================================================================== -->
+    <section id="panel-api" class="hidden space-y-6">
+
+      <!-- Configuración URL Base y Acciones Rápidas -->
+      <div class="bg-slate-900/85 border border-slate-800 rounded-2xl p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3 flex-1">
+          <label for="api-base-url" class="text-xs font-mono uppercase text-slate-400 shrink-0">URL Base FastAPI:</label>
+          <input id="api-base-url" type="text" value="http://127.0.0.1:8000" class="bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 font-mono text-xs sm:text-sm text-cyan-300 focus:outline-none focus:border-cyan-400 w-full sm:w-64" />
+        </div>
+        <div class="flex flex-wrap items-center gap-2.5">
+          <button onclick="runEndpoint('unified')" class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition">
+            Ejecutar Diagnóstico Unificado
+          </button>
+          <button onclick="simulateOfflineEndpoint()" class="px-4 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-bold text-xs transition">
+            Simular Respuesta Offline
+          </button>
+        </div>
+      </div>
+
+      <!-- Tarjeta de Resumen Visual del Diagnóstico -->
+      <div class="bg-slate-900/85 border border-slate-800 rounded-2xl p-5 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h3 class="text-sm font-bold uppercase tracking-wider font-mono text-cyan-400">Resumen Visual del Diagnóstico — Río Dulce</h3>
+          <span id="diag-updated-at" class="text-xs font-mono text-slate-500">Sin evaluación reciente</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+            <div class="text-[11px] font-mono text-slate-400">CIANOSEMÁFORO</div>
+            <div id="card-cianosemaforo" class="mt-2 inline-block px-3 py-1 rounded-lg font-extrabold text-sm bg-slate-800 text-slate-300">PENDIENTE</div>
+            <div id="card-citizen-count" class="text-xs font-mono text-slate-500 mt-2">Reportes ciudadanos: 0</div>
+          </div>
+
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+            <div class="text-[11px] font-mono text-slate-400">ALERTA INUNDACIÓN (EL NIÑO)</div>
+            <div id="card-flood" class="mt-2 inline-block px-3 py-1 rounded-lg font-extrabold text-sm bg-slate-800 text-slate-300">PENDIENTE</div>
+            <div id="card-water-level" class="text-xs font-mono text-slate-500 mt-2">Nivel río: -- m</div>
+          </div>
+
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+            <div class="text-[11px] font-mono text-slate-400">ESTADO GLOBAL</div>
+            <div id="card-overall" class="mt-2 inline-block px-3 py-1 rounded-lg font-extrabold text-sm bg-slate-800 text-slate-300">PENDIENTE</div>
+            <div id="card-precip" class="text-xs font-mono text-slate-500 mt-2">Lluvia 72h: -- mm</div>
+          </div>
+
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+            <div class="text-[11px] font-mono text-slate-400">BARRERAS BIOCHAR HDPE</div>
+            <div id="card-biochar" class="mt-2 inline-block px-3 py-1 rounded-lg font-extrabold text-sm bg-slate-800 text-slate-300">EN ESPERA</div>
+            <div class="text-xs font-mono text-slate-500 mt-2">Pirólisis 450–550 °C</div>
+          </div>
+        </div>
+
+        <div id="diag-action-box" class="hidden bg-slate-950/90 border border-slate-800 rounded-xl p-3.5">
+          <div class="text-[11px] font-mono text-emerald-400 uppercase mb-1.5">Acciones Recomendadas</div>
+          <ul id="diag-action-list" class="space-y-1 text-xs text-slate-300"></ul>
+        </div>
+      </div>
+
+      <!-- Consola de Endpoints + Visor JSON -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- Lista de Endpoints (7 cols) -->
+        <div class="lg:col-span-7 space-y-4">
+
+          <!-- 1. GET /health -->
+          <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+              <span class="px-2.5 py-1 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-mono text-xs font-bold">GET</span>
+              <code class="font-mono text-xs sm:text-sm text-white font-semibold">/health</code>
+            </div>
+            <button onclick="runEndpoint('health')" class="px-3.5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition">
+              Ejecutar Endpoint
+            </button>
+          </div>
+
+          <!-- 2. GET /api/v1/satellite/trends -->
+          <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-2.5">
+                <span class="px-2.5 py-1 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-mono text-xs font-bold">GET</span>
+                <code class="font-mono text-xs sm:text-sm text-white font-semibold">/api/v1/satellite/trends</code>
+              </div>
+              <button onclick="runEndpoint('trends')" class="px-3.5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition">
+                Ejecutar Endpoint
+              </button>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-mono text-slate-400 mb-1">lat</label>
+                <input id="param-lat" type="number" step="0.0001" value="-27.7850" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 font-mono text-xs text-white" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-mono text-slate-400 mb-1">lon</label>
+                <input id="param-lon" type="number" step="0.0001" value="-64.2450" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 font-mono text-xs text-white" />
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. POST /api/v1/iot/simulate-event -->
+          <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+              <span class="px-2.5 py-1 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30 font-mono text-xs font-bold">POST</span>
+              <code class="font-mono text-xs sm:text-sm text-white font-semibold">/api/v1/iot/simulate-event</code>
+            </div>
+            <button onclick="runEndpoint('simulate')" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition">
+              Ejecutar Endpoint
+            </button>
+          </div>
+
+          <!-- 4. POST /api/v1/iot/telemetry -->
+          <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-2.5">
+                <span class="px-2.5 py-1 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30 font-mono text-xs font-bold">POST</span>
+                <code class="font-mono text-xs sm:text-sm text-white font-semibold">/api/v1/iot/telemetry</code>
+              </div>
+              <button onclick="runEndpoint('telemetry')" class="px-3.5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition">
+                Ejecutar Endpoint
+              </button>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <div>
+                <label class="block text-[10px] font-mono text-slate-400 mb-1">buoy_id</label>
+                <input id="iot-buoy" type="text" value="BUOY-SGO-01" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-mono text-slate-400 mb-1">water_level_m</label>
+                <input id="iot-level" type="number" step="0.05" value="2.85" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-mono text-slate-400 mb-1">ph</label>
+                <input id="iot-ph" type="number" step="0.1" value="8.7" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-mono text-slate-400 mb-1">turbidity_ntu</label>
+                <input id="iot-ntu" type="number" step="0.5" value="24.0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-mono text-slate-400 mb-1">water_temp_c</label>
+                <input id="iot-temp" type="number" step="0.1" value="25.2" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-mono text-slate-400 mb-1">dbo_mg_l</label>
+                <input id="iot-dbo" type="number" step="0.1" value="6.5" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-mono text-slate-400 mb-1">dqo_mg_l</label>
+                <input id="iot-dqo" type="number" step="0.5" value="26.0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-mono text-slate-400 mb-1">phenols_mg_l</label>
+                <input id="iot-phenols" type="number" step="0.0001" value="0.0014" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white" />
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. POST /api/v1/citizen/report -->
+          <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-2.5">
+                <span class="px-2.5 py-1 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30 font-mono text-xs font-bold">POST</span>
+                <code class="font-mono text-xs sm:text-sm text-white font-semibold">/api/v1/citizen/report</code>
+              </div>
+              <button onclick="runEndpoint('citizen')" class="px-3.5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition">
+                Ejecutar Endpoint
+              </button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <input id="cit-reporter" type="text" value="Brigada Ribera" placeholder="Reportante" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white" />
+              <input id="cit-lat" type="number" step="0.0001" value="-27.7850" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 font-mono text-xs text-white" />
+              <input id="cit-lon" type="number" step="0.0001" value="-64.2450" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 font-mono text-xs text-white" />
+            </div>
+            <div class="flex flex-wrap gap-4 text-xs text-slate-300">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input id="cit-bloom" type="checkbox" checked class="rounded border-slate-700 bg-slate-950 text-emerald-500" />
+                <span>Floración algal visible</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input id="cit-overflow" type="checkbox" class="rounded border-slate-700 bg-slate-950 text-amber-500" />
+                <span>Desborde costero</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- 6. GET /api/v1/diagnosis/unified -->
+          <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+              <span class="px-2.5 py-1 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-mono text-xs font-bold">GET</span>
+              <code class="font-mono text-xs sm:text-sm text-white font-semibold">/api/v1/diagnosis/unified</code>
+            </div>
+            <button onclick="runEndpoint('unified')" class="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition">
+              Ejecutar Endpoint
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Visor JSON Formateado (5 cols) -->
+        <div class="lg:col-span-5 lg:sticky lg:top-24 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+          <div class="px-4 py-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-mono font-bold text-cyan-400">JSON</span>
+              <span id="json-status" class="px-2 py-0.5 rounded font-mono text-[11px] bg-slate-800 text-slate-300">LISTO</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="simulateOfflineEndpoint()" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-mono transition">
+                Simular Offline
+              </button>
+              <button onclick="copyJsonOutput()" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono transition">
+                Copiar
+              </button>
+            </div>
+          </div>
+          <div class="px-4 py-2 bg-slate-950/60 border-b border-slate-800/80">
+            <code id="json-endpoint-label" class="text-[11px] font-mono text-slate-400 block truncate">GET http://127.0.0.1:8000/api/v1/diagnosis/unified</code>
+          </div>
+          <pre id="json-output" class="p-4 font-mono text-xs text-emerald-300 bg-slate-950 overflow-auto max-h-[520px] leading-relaxed">{
+  "proyecto": "EcoStream Sgo",
+  "cuenca": "Río Dulce, Santiago del Estero (-27.7850, -64.2450)",
+  "estado": "Listo para ejecutar endpoints o simular respuesta offline."
+}</pre>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- JAVASCRIPT AUTOCONTENIDO -->
+  <script>
+    // Claves de persistencia en localStorage
+    const LS_DRIVE_URL = 'ecostream_sgo_drive_url';
+    const LS_PPT_URL = 'ecostream_sgo_ppt_url';
+    const LS_PPT_EMBED = 'ecostream_sgo_ppt_embed';
+
+    let currentActiveTab = 'drive';
+    let lastEndpointSelected = 'unified';
+    let slideIndex = 0;
+
+    // =========================================================================
+    // 1. NAVEGACIÓN DE LOS 3 BOTONES PRINCIPALES
+    // =========================================================================
+    function selectSection(section) {
+      currentActiveTab = section;
+      const panels = {
+        drive: document.getElementById('panel-drive'),
+        ppt: document.getElementById('panel-ppt'),
+        api: document.getElementById('panel-api'),
+      };
+      const buttons = {
+        drive: document.getElementById('btn-nav-drive'),
+        ppt: document.getElementById('btn-nav-ppt'),
+        api: document.getElementById('btn-nav-api'),
+      };
+
+      const styles = {
+        drive: {
+          active: 'group relative text-left p-5 rounded-2xl border-2 border-cyan-500/70 bg-slate-900/95 shadow-lg shadow-cyan-500/10 transition-all flex flex-col justify-between gap-4',
+          inactive: 'group relative text-left p-5 rounded-2xl border-2 border-slate-800 hover:border-cyan-500/50 bg-slate-900/70 hover:bg-slate-800/90 transition-all flex flex-col justify-between gap-4'
+        },
+        ppt: {
+          active: 'group relative text-left p-5 rounded-2xl border-2 border-indigo-500/70 bg-slate-900/95 shadow-lg shadow-indigo-500/10 transition-all flex flex-col justify-between gap-4',
+          inactive: 'group relative text-left p-5 rounded-2xl border-2 border-slate-800 hover:border-indigo-500/50 bg-slate-900/70 hover:bg-slate-800/90 transition-all flex flex-col justify-between gap-4'
+        },
+        api: {
+          active: 'group relative text-left p-5 rounded-2xl border-2 border-emerald-500/70 bg-slate-900/95 shadow-lg shadow-emerald-500/10 transition-all flex flex-col justify-between gap-4',
+          inactive: 'group relative text-left p-5 rounded-2xl border-2 border-slate-800 hover:border-emerald-500/50 bg-slate-900/70 hover:bg-slate-800/90 transition-all flex flex-col justify-between gap-4'
+        }
+      };
+
+      Object.keys(panels).forEach(key => {
+        if (key === section) {
+          panels[key].classList.remove('hidden');
+          buttons[key].className = styles[key].active;
+        } else {
+          panels[key].classList.add('hidden');
+          buttons[key].className = styles[key].inactive;
+        }
+      });
+
+      if (section === 'ppt') renderSlide(slideIndex);
+    }
+
+    // =========================================================================
+    // 2. BOTÓN 1: ENLACE GOOGLE DRIVE (localStorage)
+    // =========================================================================
+    function initDriveSettings() {
+      const saved = localStorage.getItem(LS_DRIVE_URL) || '';
+      const input = document.getElementById('input-drive-url');
+      const anchor = document.getElementById('drive-direct-anchor');
+      const subtitle = document.getElementById('drive-btn-subtitle');
+      const status = document.getElementById('drive-saved-status');
+
+      if (saved) {
+        input.value = saved;
+        anchor.href = saved;
+        subtitle.textContent = saved;
+        status.textContent = 'Enlace guardado: ' + saved;
+      } else {
+        input.value = '';
+        anchor.href = 'https://drive.google.com';
+        subtitle.textContent = 'Configura tu enlace de Google Drive aquí';
+        status.textContent = 'Sin enlace personalizado guardado aún.';
+      }
+    }
+
+    function handleDriveButtonClick() {
+      selectSection('drive');
+      const saved = localStorage.getItem(LS_DRIVE_URL);
+      if (saved) {
+        window.open(saved, '_blank', 'noopener,noreferrer');
+      } else {
+        document.getElementById('input-drive-url').focus();
+        showToast('Pega y guarda tu enlace de Google Drive para abrirlo directo.', 'info');
+      }
+    }
+
+    function openDriveLink(e) {
+      const saved = localStorage.getItem(LS_DRIVE_URL);
+      if (!saved) {
+        e.preventDefault();
+        document.getElementById('input-drive-url').focus();
+        showToast('Primero guarda tu URL de Google Drive en el campo inferior.', 'warning');
+      }
+    }
+
+    function saveDriveUrl(e) {
+      e.preventDefault();
+      const url = document.getElementById('input-drive-url').value.trim();
+      if (!url) return;
+      localStorage.setItem(LS_DRIVE_URL, url);
+      initDriveSettings();
+      showToast('Enlace de Google Drive guardado correctamente.', 'success');
+    }
+
+    function resetDriveUrl() {
+      localStorage.removeItem(LS_DRIVE_URL);
+      initDriveSettings();
+      showToast('Enlace de Google Drive restablecido.', 'info');
+    }
+
+    // =========================================================================
+    // 3. BOTÓN 2: PRESENTACIÓN POWERPOINT
+    // =========================================================================
+    const SLIDES = [
+      {
+        tag: '01 / 07 · PORTADA',
+        title: 'EcoStream Sgo: Vigilancia Satelital e IoT (2006–2026)',
+        desc: 'Detección temprana de inundaciones por El Niño y mitigación circular de cianobacterias con Biochar en el Río Dulce (-27.7850, -64.2450).',
+        cards: [
+          { k: 'Cuenca Objetivo', v: 'Río Dulce Capital, Santiago del Estero' },
+          { k: 'Rigor Estadístico', v: 'Mann-Kendall + Sen Slope (p < 0.05)' },
+          { k: 'Solución Natural', v: 'Barreras Flotantes Biochar (450–550 °C)' }
+        ]
+      },
+      {
+        tag: '02 / 07 · PROBLEMÁTICA ENSO',
+        title: 'Cascada Hidro-Ecológica en el Río Dulce',
+        desc: 'Las lluvias torrenciales arrastran nutrientes agrícolas y las olas de calor detonan floraciones nocivas de cianobacterias.',
+        cards: [
+          { k: 'Olas de Calor (T2M)', v: '> 35 °C · Acelera división algal' },
+          { k: 'Tormentas (PRECTOTCORR)', v: '30–50 mm/24h · Crecidas y escorrentía' },
+          { k: 'Radiación Solar', v: '> 6.5 kWh/m²/día · Fotosíntesis y anoxia' }
+        ]
+      },
+      {
+        tag: '03 / 07 · GROUND-TRUTHING',
+        title: 'Arquitectura de Validación en 3 Capas + Cianosemáforo',
+        desc: 'Alineación espacio-temporal entre observación orbital, sensores en cauce y reportes comunitarios.',
+        cards: [
+          { k: 'Capa Macro (NASA/CSA)', v: 'POWER, MODIS, PACE, SWOT y RCM SAR' },
+          { k: 'Capa Meso (Boyas IoT)', v: 'ESP32 + LoRaWAN (Nivel, pH, NTU, DBO, DQO)' },
+          { k: 'Capa Micro (Ciudadana)', v: 'Fotos georreferenciadas + Cianosemáforo 4 niveles' }
+        ]
+      },
+      {
+        tag: '04 / 07 · PARÁMETROS',
+        title: 'Variables Satelitales y Biosensores In-Situ',
+        desc: 'Umbrales calibrados para detectar simultáneamente desbordes y riesgo de microcistinas.',
+        cards: [
+          { k: 'Óptico / Hiperespectral', v: 'NDWI > 0.10 · Clorofila-a · Ficocianina PACE' },
+          { k: 'Nivel Ultrasónico', v: '+40% Alerta Naranja · ≥ 3.50 m Evacuación Roja' },
+          { k: 'Físico-Químico', v: 'pH > 8.5 · Turbidez > 20 NTU · Fenoles > 0.001 mg/L' }
+        ]
+      },
+      {
+        tag: '05 / 07 · MOTOR ANALÍTICO',
+        title: 'Pipeline Python, FastAPI y Diagnóstico Cruzado',
+        desc: 'Filtrado estricto de significancia estadística al 95% (p < 0.05) para eliminar falsas alarmas.',
+        cards: [
+          { k: 'Backend REST', v: 'FastAPI + Planetary Computer + Meteomatics 72h' },
+          { k: 'Tendencias 20 Años', v: 'Estimador no paramétrico de Pendiente de Sen' },
+          { k: 'Despacho Dual', v: 'Actualización en tiempo real del Cianosemáforo' }
+        ]
+      },
+      {
+        tag: '06 / 07 · MITIGACIÓN CIRCULAR',
+        title: 'Barreras Flotantes Modulares de Biochar',
+        desc: 'Biocarbón pirolizado de residuos agroforestales locales dentro de mangas de geotextil HDPE.',
+        cards: [
+          { k: 'Pirólisis Controlada', v: '450–550 °C a partir de marlo de maíz y arroz' },
+          { k: 'Adsorción Sin Químicos', v: 'Retiene nitratos, fosfatos, fenoles y toxinas' },
+          { k: 'Ciclo de 15 Días', v: 'Retiro y compostaje termófilo para enmienda de suelos' }
+        ]
+      },
+      {
+        tag: '07 / 07 · IMPACTO Y PRESUPUESTO',
+        title: 'Escalamiento Piloto de Bajo Costo ($1,250 USD)',
+        desc: 'MVP de software a costo $0 y despliegue territorial completo de 5 boyas IoT y 50m de barreras.',
+        cards: [
+          { k: 'Hardware + Nube', v: '5 Boyas Solares ($450) + Azure/Dominio ($50)' },
+          { k: 'Biochar + Laboratorio', v: 'Horno y 50m HDPE ($300) + Análisis ($250)' },
+          { k: 'Comunidad', v: 'Talleres y cartelería Cianosemáforo ($200)' }
+        ]
+      }
+    ];
+
+    function initPptSettings() {
+      const savedUrl = localStorage.getItem(LS_PPT_URL) || 'https://canva.link/bwy182rc658da9r';
+      const savedEmbed = localStorage.getItem(LS_PPT_EMBED) || '';
+      document.getElementById('input-ppt-url').value = savedUrl;
+      document.getElementById('ppt-external-anchor').href = savedUrl;
+      document.getElementById('input-ppt-embed').value = savedEmbed;
+
+      if (savedEmbed) {
+        document.getElementById('ppt-embed-wrapper').classList.remove('hidden');
+        document.getElementById('ppt-embed-frame').src = savedEmbed;
+        document.getElementById('ppt-local-deck').classList.add('hidden');
+      } else {
+        document.getElementById('ppt-embed-wrapper').classList.add('hidden');
+        document.getElementById('ppt-local-deck').classList.remove('hidden');
+      }
+    }
+
+    function togglePptConfig() {
+      document.getElementById('ppt-config-form').classList.toggle('hidden');
+    }
+
+    function savePptSettings(e) {
+      e.preventDefault();
+      const url = document.getElementById('input-ppt-url').value.trim();
+      const embed = document.getElementById('input-ppt-embed').value.trim();
+      if (url) localStorage.setItem(LS_PPT_URL, url);
+      if (embed) localStorage.setItem(LS_PPT_EMBED, embed);
+      else localStorage.removeItem(LS_PPT_EMBED);
+      initPptSettings();
+      document.getElementById('ppt-config-form').classList.add('hidden');
+      showToast('Configuración de presentación guardada.', 'success');
+    }
+
+    function clearPptEmbed() {
+      localStorage.removeItem(LS_PPT_EMBED);
+      initPptSettings();
+    }
+
+    function renderSlide(idx) {
+      slideIndex = Math.max(0, Math.min(SLIDES.length - 1, idx));
+      const s = SLIDES[slideIndex];
+      document.getElementById('slide-indicator').textContent = `Diapositiva ${slideIndex + 1} / ${SLIDES.length}`;
+      document.getElementById('btn-slide-prev').disabled = slideIndex === 0;
+      document.getElementById('btn-slide-next').disabled = slideIndex === SLIDES.length - 1;
+
+      document.getElementById('slide-body').innerHTML = `
+        <div class="space-y-4 max-w-4xl mx-auto w-full">
+          <span class="inline-block px-2.5 py-1 rounded-md bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 font-mono text-xs font-bold">${s.tag}</span>
+          <h3 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">${s.title}</h3>
+          <p class="text-sm sm:text-base text-slate-300 leading-relaxed">${s.desc}</p>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3">
+            ${s.cards.map(c => `
+              <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-4">
+                <div class="text-xs font-mono text-cyan-400 font-semibold">${c.k}</div>
+                <div class="text-sm font-bold text-white mt-1.5">${c.v}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+
+      document.getElementById('slide-dots').innerHTML = SLIDES.map((_, i) => `
+        <button onclick="renderSlide(${i})" aria-label="Diapositiva ${i + 1}" class="h-2 rounded-full transition-all ${i === slideIndex ? 'w-7 bg-indigo-400' : 'w-2 bg-slate-700 hover:bg-slate-500'}"></button>
+      `).join('');
+    }
+
+    function moveSlide(delta) {
+      renderSlide(slideIndex + delta);
+    }
+
+    // =========================================================================
+    // 4. BOTÓN 3: CONSOLA ENDPOINTS API + SIMULACIÓN OFFLINE
+    // =========================================================================
+    function getApiBase() {
+      return (document.getElementById('api-base-url').value || 'http://127.0.0.1:8000').replace(/\/+$/, '');
+    }
+
+    function setConnectionStatus(isOnline, label) {
+      const dot = document.getElementById('header-conn-dot');
+      const text = document.getElementById('header-conn-text');
+      const select = document.getElementById('header-mode-select');
+      if (isOnline) {
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
+        text.textContent = label || 'Conectado a FastAPI';
+        select.value = 'live';
+      } else {
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse';
+        text.textContent = label || 'Modo Simulación Offline';
+        select.value = 'offline';
+      }
+    }
+
+    function handleConnectionModeChange(mode) {
+      if (mode === 'offline') {
+        setConnectionStatus(false, 'Modo Simulación Offline');
+        selectSection('api');
+        simulateOfflineEndpoint();
+      } else {
+        checkApiHealth();
+      }
+    }
+
+    async function checkApiHealth() {
+      try {
+        const res = await fetch(`${getApiBase()}/health`);
+        if (res.ok) {
+          setConnectionStatus(true, 'API Local Activa');
+          showToast('Conexión exitosa con FastAPI (127.0.0.1:8000).', 'success');
+        } else {
+          setConnectionStatus(false, 'API sin respuesta OK');
+        }
+      } catch (e) {
+        setConnectionStatus(false, 'Offline (Servidor apagado)');
+        showToast('Servidor local no detectado. Puedes usar "Simular Respuesta Offline".', 'warning');
+      }
+    }
+
+    async function runEndpoint(key) {
+      lastEndpointSelected = key;
+      const base = getApiBase();
+      let method = 'GET';
+      let path = '/health';
+      let payload = null;
+
+      if (key === 'health') {
+        method = 'GET';
+        path = '/health';
+      } else if (key === 'trends') {
+        const lat = document.getElementById('param-lat').value || '-27.7850';
+        const lon = document.getElementById('param-lon').value || '-64.2450';
+        method = 'GET';
+        path = `/api/v1/satellite/trends?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
+      } else if (key === 'simulate') {
+        method = 'POST';
+        path = '/api/v1/iot/simulate-event';
+      } else if (key === 'telemetry') {
+        method = 'POST';
+        path = '/api/v1/iot/telemetry';
+        payload = {
+          buoy_id: document.getElementById('iot-buoy').value,
+          lat: -27.7850,
+          lon: -64.2450,
+          water_level_m: parseFloat(document.getElementById('iot-level').value),
+          ph: parseFloat(document.getElementById('iot-ph').value),
+          turbidity_ntu: parseFloat(document.getElementById('iot-ntu').value),
+          water_temp_c: parseFloat(document.getElementById('iot-temp').value),
+          dbo_mg_l: parseFloat(document.getElementById('iot-dbo').value),
+          dqo_mg_l: parseFloat(document.getElementById('iot-dqo').value),
+          phenols_mg_l: parseFloat(document.getElementById('iot-phenols').value)
+        };
+      } else if (key === 'citizen') {
+        method = 'POST';
+        path = '/api/v1/citizen/report';
+        payload = {
+          reporter_name: document.getElementById('cit-reporter').value,
+          lat: parseFloat(document.getElementById('cit-lat').value),
+          lon: parseFloat(document.getElementById('cit-lon').value),
+          visual_bloom_detected: document.getElementById('cit-bloom').checked,
+          shoreline_overflow_detected: document.getElementById('cit-overflow').checked,
+          notes: 'Reporte desde portal web EcoStream Sgo'
+        };
+      } else if (key === 'unified') {
+        method = 'GET';
+        path = '/api/v1/diagnosis/unified';
+      }
+
+      const fullUrl = `${base}${path}`;
+      document.getElementById('json-endpoint-label').textContent = `${method} ${fullUrl}`;
+      const statusBadge = document.getElementById('json-status');
+      statusBadge.textContent = 'EJECUTANDO...';
+      statusBadge.className = 'px-2 py-0.5 rounded font-mono text-[11px] bg-cyan-950 text-cyan-300';
+
+      try {
+        const opts = { method, headers: { 'Content-Type': 'application/json' } };
+        if (payload) opts.body = JSON.stringify(payload);
+
+        const res = await fetch(fullUrl, opts);
+        const data = await res.json();
+
+        statusBadge.textContent = `${res.status} ${res.ok ? 'OK' : 'ERROR'}`;
+        statusBadge.className = res.ok
+          ? 'px-2 py-0.5 rounded font-mono text-[11px] bg-emerald-500/20 text-emerald-300'
+          : 'px-2 py-0.5 rounded font-mono text-[11px] bg-rose-500/20 text-rose-300';
+
+        document.getElementById('json-output').textContent = JSON.stringify(data, null, 2);
+        setConnectionStatus(true, 'API Local Activa');
+
+        if (key === 'unified' && res.ok) {
+          updateDiagnosisCards(data);
+        } else if (key === 'simulate' && res.ok) {
+          showToast('Evento crítico simulado en FastAPI. Actualizando diagnóstico...', 'warning');
+          runEndpoint('unified');
+        }
+      } catch (err) {
+        statusBadge.textContent = 'OFFLINE';
+        statusBadge.className = 'px-2 py-0.5 rounded font-mono text-[11px] bg-amber-500/20 text-amber-300';
+        setConnectionStatus(false, 'Modo Simulación Offline');
+        document.getElementById('json-output').textContent = JSON.stringify({
+          aviso: 'Servidor local no accesible en ' + fullUrl,
+          accion: 'Haz clic en "Simular Respuesta Offline" para visualizar datos realistas del Río Dulce.'
+        }, null, 2);
+      }
+    }
+
+    function simulateOfflineEndpoint() {
+      const now = new Date().toISOString();
+      const offlineData = {
+        health: {
+          status: 'ok (simulación offline)',
+          service: 'EcoStream Sgo API',
+          coordinates: [-27.7850, -64.2450]
+        },
+        trends: {
+          coordinates: { lat: -27.7850, lon: -64.2450 },
+          period: '20060101 - 20261115',
+          statistical_filter: 'Mann-Kendall + Sen Slope (p < 0.05)',
+          trends: [
+            {
+              variable: 'T2M',
+              description: 'Temperatura del aire a 2m',
+              unit: '°C',
+              trend_direction: 'increasing',
+              p_value: 0.0038,
+              is_significant: true,
+              sens_slope_per_year: 0.071,
+              total_change_20yr: 1.42,
+              latest_value: 36.8,
+              alert_triggered: true
+            },
+            {
+              variable: 'PRECTOTCORR',
+              description: 'Precipitación extrema El Niño',
+              unit: 'mm/día',
+              trend_direction: 'increasing',
+              p_value: 0.0142,
+              is_significant: true,
+              sens_slope_per_year: 0.45,
+              total_change_20yr: 9.0,
+              latest_value: 43.5,
+              alert_triggered: true
+            }
+          ]
+        },
+        simulate: {
+          buoy_id: 'BUOY-SGO-DULCE-01',
+          lat: -27.7850,
+          lon: -64.2450,
+          timestamp: now,
+          water_level_m: 3.18,
+          ph: 8.9,
+          turbidity_ntu: 29.0,
+          water_temp_c: 25.9,
+          dbo_mg_l: 8.6,
+          dqo_mg_l: 33.5,
+          phenols_mg_l: 0.0019
+        },
+        telemetry: {
+          buoy_id: document.getElementById('iot-buoy').value,
+          water_level_m: parseFloat(document.getElementById('iot-level').value),
+          ph: parseFloat(document.getElementById('iot-ph').value),
+          turbidity_ntu: parseFloat(document.getElementById('iot-ntu').value),
+          timestamp: now
+        },
+        citizen: {
+          reporter_name: document.getElementById('cit-reporter').value,
+          visual_bloom_detected: document.getElementById('cit-bloom').checked,
+          shoreline_overflow_detected: document.getElementById('cit-overflow').checked,
+          timestamp: now
+        },
+        unified: {
+          location: { lat: -27.7850, lon: -64.2450 },
+          evaluated_at: now,
+          overall_alert: 'NARANJA',
+          cianosemaforo_status: 'NARANJA',
+          flood_alert_status: 'NARANJA',
+          deploy_biochar_barriers: true,
+          forecast_precip_72h_mm: 41.2,
+          citizen_validations_count: 3,
+          latest_buoy: {
+            buoy_id: 'BUOY-SGO-DULCE-01',
+            water_level_m: 3.18,
+            ph: 8.9,
+            turbidity_ntu: 29.0
+          },
+          recommended_actions: [
+            'Alerta Naranja Inundación (+51% sobre cota base 2.10 m): Preparar kit de emergencia y alertar zonas ribereñas.',
+            'Cianosemáforo NARANJA: Evitar contacto directo con manchas verdes en la costa del Río Dulce.',
+            'Desplegar mangas flotantes de geotextil HDPE con Biochar pirolizado (450–550 °C) y retirar a los 15 días.'
+          ]
+        }
+      };
+
+      const selectedData = offlineData[lastEndpointSelected] || offlineData.unified;
+      const statusBadge = document.getElementById('json-status');
+      statusBadge.textContent = '200 OFFLINE';
+      statusBadge.className = 'px-2 py-0.5 rounded font-mono text-[11px] bg-amber-500/20 text-amber-300';
+      document.getElementById('json-output').textContent = JSON.stringify(selectedData, null, 2);
+
+      if (lastEndpointSelected === 'unified' || lastEndpointSelected === 'simulate') {
+        updateDiagnosisCards(offlineData.unified);
+      }
+      showToast('Respuesta offline simulada.', 'info');
+    }
+
+    function updateDiagnosisCards(data) {
+      document.getElementById('diag-updated-at').textContent = 'Actualizado: ' + new Date(data.evaluated_at).toLocaleTimeString('es-AR');
+      styleAlertPill('card-cianosemaforo', data.cianosemaforo_status);
+      styleAlertPill('card-flood', data.flood_alert_status);
+      styleAlertPill('card-overall', data.overall_alert);
+
+      const biocharEl = document.getElementById('card-biochar');
+      if (data.deploy_biochar_barriers) {
+        biocharEl.textContent = 'DESPLEGAR BIOCHAR';
+        biocharEl.className = 'mt-2 inline-block px-3 py-1 rounded-lg font-extrabold text-xs bg-emerald-500 text-slate-950';
+      } else {
+        biocharEl.textContent = 'EN RESERVA';
+        biocharEl.className = 'mt-2 inline-block px-3 py-1 rounded-lg font-extrabold text-xs bg-slate-800 text-slate-300';
+      }
+
+      document.getElementById('card-citizen-count').textContent = `Reportes ciudadanos: ${data.citizen_validations_count ?? 0}`;
+      document.getElementById('card-precip').textContent = `Lluvia 72h: ${data.forecast_precip_72h_mm ?? '--'} mm`;
+      document.getElementById('card-water-level').textContent = data.latest_buoy
+        ? `Nivel río: ${data.latest_buoy.water_level_m} m`
+        : 'Nivel río: -- m';
+
+      const actionBox = document.getElementById('diag-action-box');
+      const actionList = document.getElementById('diag-action-list');
+      if (Array.isArray(data.recommended_actions) && data.recommended_actions.length > 0) {
+        actionBox.classList.remove('hidden');
+        actionList.innerHTML = data.recommended_actions.map(a => `<li>• ${escapeHtml(a)}</li>`).join('');
+      }
+    }
+
+    function styleAlertPill(id, level) {
+      const el = document.getElementById(id);
+      el.textContent = level || 'PENDIENTE';
+      const map = {
+        VERDE: 'mt-2 inline-block px-3 py-1 rounded-lg font-extrabold text-sm bg-emerald-500 text-slate-950',
+        AMARILLO: 'mt-2 inline-block px-3 py-1 rounded-lg font-extrabold text-sm bg-yellow-400 text-slate-950',
+        NARANJA: 'mt-2 inline-block px-3 py-1 rounded-lg font-extrabold text-sm bg-orange-500 text-slate-950',
+        ROJO: 'mt-2 inline-block px-3 py-1 rounded-lg font-extrabold text-sm bg-rose-600 text-white'
+      };
+      el.className = map[level] || 'mt-2 inline-block px-3 py-1 rounded-lg font-extrabold text-sm bg-slate-800 text-slate-300';
+    }
+
+    function copyJsonOutput() {
+      const text = document.getElementById('json-output').textContent;
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast('JSON copiado al portapapeles.', 'success');
+      } catch (e) {
+        showToast('No se pudo copiar.', 'warning');
+      }
+      ta.remove();
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const el = document.createElement('div');
+      const styles = {
+        success: 'bg-emerald-950 border-emerald-500 text-emerald-200',
+        warning: 'bg-amber-950 border-amber-500 text-amber-200',
+        info: 'bg-slate-900 border-cyan-500 text-cyan-200'
+      };
+      el.className = `pointer-events-auto px-4 py-3 rounded-xl border shadow-xl text-xs font-medium transition-opacity duration-300 ${styles[type] || styles.info}`;
+      el.textContent = msg;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 300);
+      }, 3000);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initDriveSettings();
+      initPptSettings();
+      renderSlide(0);
+    });
+  </script>
+</body>
+</html>
